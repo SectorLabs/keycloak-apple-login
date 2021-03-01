@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.benjaminfavre</groupId>
     <artifactId>apple-social-identity-provider</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.2-sl</version>
     <name>Apple Social Identity Provider</name>
     <description>Apple Social Identity Provider for Keycloak</description>
     <url>https://github.com/BenjaminFavre/keycloak-apple-social-identity-provider</url>
@@ -45,6 +45,15 @@
                         <arg>-Xlint</arg>
                     </compilerArgs>
                     <verbose>true</verbose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <altReleaseDeploymentRepository>
+                        nexus::default::${env.NEXUS_REPO_RELEASE}
+                    </altReleaseDeploymentRepository>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,0 +1,28 @@
+version: 2.1
+
+orbs:
+  maven: circleci/maven@1.0.3
+
+jobs:
+  release:
+    docker:
+      - image: cimg/openjdk:13.0
+    steps:
+      - checkout
+      - run:
+          name: 'Generate settings.xml'
+          command: 'cd ./ci && ./configure_nexus_repo.sh'
+      - run:
+          name: 'Deploy'
+          command: 'mvn -s ./ci/settings.xml deploy'
+
+workflows:
+  version: 2
+  release:
+    jobs:
+      - release:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
