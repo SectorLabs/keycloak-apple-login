@@ -16,6 +16,7 @@ jobs:
           name: 'Deploy'
           command: 'mvn -s ./ci/settings.xml deploy'
 
+
 workflows:
   version: 2
   release:
