@@ -53,8 +53,8 @@ public class AppleIdentityProvider extends OIDCIdentityProvider implements Socia
             try {
                 User user = JsonSerialization.readValue(userJson, User.class);
                 context.setEmail(user.email);
-                context.setFirstName(user.name.firstName);
-                context.setLastName(user.name.lastName);
+                context.setFirstName(user.name.firstName+" "+user.name.lastName);
+                context.setLastName("");
             } catch (IOException e) {
                 logger.errorf("Failed to parse userJson [%s]: %s", userJson, e);
             }
