@@ -53,14 +53,33 @@ public class AppleIdentityProvider extends OIDCIdentityProvider implements Socia
             try {
                 User user = JsonSerialization.readValue(userJson, User.class);
                 context.setEmail(user.email);
-                context.setFirstName(user.name.firstName+" "+user.name.lastName);
-                context.setLastName("");
+                populateName(context, user);
             } catch (IOException e) {
                 logger.errorf("Failed to parse userJson [%s]: %s", userJson, e);
             }
         }
 
         return context;
+    }
+
+    private void populateName(BrokeredIdentityContext context, User user) {
+        if (user.name==null)
+            return;
+
+        String name = "";
+        if (user.name.firstName != null) {
+            name = user.name.firstName;
+        }
+        if (user.name.lastName != null) {
+            if (name.isEmpty()) {
+                name = user.name.lastName;
+            } else {
+                name = name + " " + user.name.lastName;
+            }
+        }
+        if (!name.isEmpty()) {
+            context.setFirstName(name);
+        }
     }
 
     @Override
