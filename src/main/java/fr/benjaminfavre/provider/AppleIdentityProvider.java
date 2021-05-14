@@ -1,6 +1,7 @@
 package fr.benjaminfavre.provider;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.jboss.logging.Logger;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.broker.oidc.AbstractOAuth2IdentityProvider;
 import org.keycloak.broker.oidc.OIDCIdentityProvider;
@@ -34,6 +35,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 public class AppleIdentityProvider extends OIDCIdentityProvider implements SocialIdentityProvider<OIDCIdentityProviderConfig> {
+    private static final Logger logger = Logger.getLogger(AppleIdentityProvider.class);
+
     private String userJson;
 
     public AppleIdentityProvider(KeycloakSession session, AppleIdentityProviderConfig config) {
@@ -49,6 +52,8 @@ public class AppleIdentityProvider extends OIDCIdentityProvider implements Socia
 
     @Override
     public BrokeredIdentityContext getFederatedIdentity(String response) {
+        // Log https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse
+        logger.infof("Apple login TokenResponse: %s", response);
         BrokeredIdentityContext context = getAppleFederatedIdentity(response);
 
         if (userJson != null) {
