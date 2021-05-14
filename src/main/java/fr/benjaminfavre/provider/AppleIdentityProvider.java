@@ -6,6 +6,7 @@ import org.keycloak.broker.oidc.AbstractOAuth2IdentityProvider;
 import org.keycloak.broker.oidc.OIDCIdentityProvider;
 import org.keycloak.broker.oidc.OIDCIdentityProviderConfig;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
+import org.keycloak.broker.provider.IdentityBrokerException;
 import org.keycloak.broker.provider.util.SimpleHttp;
 import org.keycloak.broker.social.SocialIdentityProvider;
 import org.keycloak.common.util.Time;
@@ -17,6 +18,7 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.util.JsonSerialization;
 
@@ -47,7 +49,7 @@ public class AppleIdentityProvider extends OIDCIdentityProvider implements Socia
 
     @Override
     public BrokeredIdentityContext getFederatedIdentity(String response) {
-        BrokeredIdentityContext context = super.getFederatedIdentity(response);
+        BrokeredIdentityContext context = getAppleFederatedIdentity(response);
 
         if (userJson != null) {
             try {
@@ -60,6 +62,44 @@ public class AppleIdentityProvider extends OIDCIdentityProvider implements Socia
         }
 
         return context;
+    }
+
+    private BrokeredIdentityContext getAppleFederatedIdentity(String response){
+        //  exactly like OIDCIdentityProvider.getFederatedIdentity but without the access token verification
+        //  we don't use the access token
+        AccessTokenResponse tokenResponse = null;
+
+        try {
+            tokenResponse = (AccessTokenResponse)JsonSerialization.readValue(response, AccessTokenResponse.class);
+        } catch (IOException var10) {
+            throw new IdentityBrokerException("Could not decode access token response.", var10);
+        }
+
+        // String accessToken = this.verifyAccessToken(tokenResponse);
+        String encodedIdToken = tokenResponse.getIdToken();
+        JsonWebToken idToken = this.validateToken(encodedIdToken);
+
+        try {
+            BrokeredIdentityContext identity = this.extractIdentity(tokenResponse, null, idToken);
+            if (!identity.getId().equals(idToken.getSubject())) {
+                throw new IdentityBrokerException("Mismatch between the subject in the id_token and the subject from the user_info endpoint");
+            } else {
+                identity.getContextData().put("BROKER_NONCE", idToken.getOtherClaims().get("nonce"));
+                if (((OIDCIdentityProviderConfig)this.getConfig()).isStoreToken()) {
+                    if (tokenResponse.getExpiresIn() > 0L) {
+                        long accessTokenExpiration = (long)Time.currentTime() + tokenResponse.getExpiresIn();
+                        tokenResponse.getOtherClaims().put("accessTokenExpiration", accessTokenExpiration);
+                        response = JsonSerialization.writeValueAsString(tokenResponse);
+                    }
+
+                    identity.setToken(response);
+                }
+
+                return identity;
+            }
+        } catch (Exception e) {
+            throw new IdentityBrokerException("Could not fetch attributes from userinfo endpoint.", e);
+        }
     }
 
     private void populateName(BrokeredIdentityContext context, User user) {
